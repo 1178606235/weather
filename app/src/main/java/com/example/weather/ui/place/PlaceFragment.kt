@@ -1,5 +1,6 @@
 package com.example.weather.ui.place
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,6 +12,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.weather.R
+import com.example.weather.ui.weather.WeatherActivity
 import kotlinx.android.synthetic.main.fragment_place.*
 
 /**
@@ -18,7 +20,7 @@ import kotlinx.android.synthetic.main.fragment_place.*
  */
 class PlaceFragment : Fragment() {
     private lateinit var placeAdapter: PlaceAdapter
-    private val viewModel by lazy {
+    val viewModel by lazy {
         ViewModelProvider(
             this,
             ViewModelProvider.NewInstanceFactory()
@@ -34,12 +36,23 @@ class PlaceFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-                                                                 //配置适配器
+        if (viewModel.isPlaceSaved()){
+            val place = viewModel.getSavedPlace()
+            val intent = Intent(context,WeatherActivity::class.java).apply {
+                putExtra("location_lng",place.location.lng)
+                putExtra("location_lat",place.location.lat)
+                putExtra("place_name",place.name)
+            }
+            startActivity(intent)
+            activity?.finish()
+            return
+        }
+        //配置适配器
         val manager = LinearLayoutManager(activity)
         recyclerView.layoutManager = manager
         placeAdapter = PlaceAdapter(this, viewModel.placeList)
         recyclerView.adapter = placeAdapter
-                                                                          //对输入内容进行判断
+        //对输入内容进行判断
         searchPlaceEdit.addTextChangedListener {
             val context = it.toString()
             if (context.isNotEmpty()) {
@@ -51,7 +64,7 @@ class PlaceFragment : Fragment() {
                 placeAdapter.notifyDataSetChanged()
             }
         }
-                                                                         //对查询结果进行判断
+        //对查询结果进行判断
         viewModel.placeLiveData.observe(requireActivity(), Observer {
             val place = it.getOrNull()
             if (place != null) {

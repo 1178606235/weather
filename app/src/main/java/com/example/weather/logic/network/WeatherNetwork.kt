@@ -11,6 +11,9 @@ import kotlin.coroutines.suspendCoroutine
 * 定义一个统一的网络数据访问入口，对所有网络请求的API进行封装
 * */
 object WeatherNetwork {
+    private val weatherService = ServiceCreator.create(WeatherService::class.java)
+    suspend fun getDailyWeather(lng:String,lat:String) = weatherService.getDailyWeather(lng, lat).await()
+    suspend fun getRealtimeWeather(lng:String,lat:String) = weatherService.getRealtimeWeather(lng, lat).await()
     private val placeService =
         ServiceCreator.create(PlaceService::class.java)//使用ServiceCreator创建一个PlaceService接口的动态管理对象
 
