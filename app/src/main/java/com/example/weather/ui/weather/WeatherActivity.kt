@@ -1,14 +1,18 @@
 package com.example.weather.ui.weather
 
+import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.weather.R
@@ -22,7 +26,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class WeatherActivity : AppCompatActivity() {
-    private val viewModel by lazy {
+    val viewModel by lazy {
         ViewModelProvider(this, ViewModelProvider.NewInstanceFactory()).get(
             WeatherViewModel::class.java
         )
@@ -56,8 +60,36 @@ class WeatherActivity : AppCompatActivity() {
                 Toast.makeText(this, "无法成功获取天气信息", Toast.LENGTH_SHORT).show()
                 it.exceptionOrNull()?.printStackTrace()
             }
+            swipeRefresh.isRefreshing = false
         })
-        viewModel.refreshWeather(viewModel.locationLng, viewModel.locationLat)
+        //实现下拉刷新功能
+        swipeRefresh.setColorSchemeColors(getColor(R.color.colorPrimary))
+        refreshWeather()
+        swipeRefresh.setOnRefreshListener {
+            refreshWeather()
+        }
+        /*
+        * 实现点击切换城市按钮 打开滑动菜单，
+        * 监听DrawerLayout的状态，当滑动菜单被隐藏的时候，同时也要隐藏输入法
+        * */
+        navBtn.setOnClickListener {
+            drawLayout.openDrawer(GravityCompat.START)
+        }
+        drawLayout.addDrawerListener(object : DrawerLayout.DrawerListener {
+            override fun onDrawerStateChanged(newState: Int) {}
+
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {}
+
+            override fun onDrawerOpened(drawerView: View) {}
+
+            override fun onDrawerClosed(drawerView: View) {
+                val manager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                manager.hideSoftInputFromWindow(
+                    drawerView.windowToken,
+                    InputMethodManager.HIDE_NOT_ALWAYS
+                )
+            }
+        })
     }
 
     private fun showWeatherInfo(weather: Weather) {
@@ -85,9 +117,11 @@ class WeatherActivity : AppCompatActivity() {
             val skyInfo = view.findViewById(R.id.skyInfo) as TextView
             val temperatureInfo = view.findViewById(R.id.temperatureInfo) as TextView
             Log.e("aaaaaaadataInfo", "dddddddddddddddddddddddddddd")
-             val simpleDataFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val simpleDataFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             Log.e("ccccccccccccccccdataInfo", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-          //  dataInfo.text = simpleDataFormat.format(skycon.data)
+            if (skycon.data != null) {
+                dataInfo.text = simpleDataFormat.format(skycon.data)
+            }
             val sky = getSky(skycon.value)
             skyIcon.setImageResource(sky.icon)
             skyInfo.text = sky.info
@@ -106,5 +140,10 @@ class WeatherActivity : AppCompatActivity() {
         ultravioletText.text = lifeIndex.ultraviolet[0].desc
         carWashingText.text = lifeIndex.carWashing[0].desc
         weatherLayout.visibility = View.VISIBLE
+    }
+
+    fun refreshWeather() {
+        viewModel.refreshWeather(viewModel.locationLng, viewModel.locationLat)
+        swipeRefresh.isRefreshing = true
     }
 }
